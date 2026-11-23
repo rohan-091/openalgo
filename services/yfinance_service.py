@@ -143,7 +143,19 @@ def get_history_from_yfinance(
 
         filtered = df[(df["timestamp"] >= start_ts) & (df["timestamp"] <= end_ts)]
         if not filtered.empty:
-            df = filtered
+            df = filtered.copy()
+
+        # Drop rows where price columns are NaN (e.g. unfinished/partial trading sessions)
+        df = df.dropna(subset=["Open", "High", "Low", "Close"])
+        if df.empty:
+            return (
+                False,
+                {
+                    "status": "error",
+                    "message": f"No valid price data returned from Yahoo Finance for ticker '{ticker_str}' interval '{interval}'.",
+                },
+                404,
+            )
 
         # Standardize columns and round decimals
         df["open"] = df["Open"].round(2)

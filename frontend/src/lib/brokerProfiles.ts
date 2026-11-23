@@ -22,10 +22,10 @@ export function brokerConfigPath(broker?: string): string {
 /**
  * Pages a trader signed in to OpenAlgo can open before connecting a broker.
  * Select Broker and Broker Configuration are full pages of their own; Profile
- * shows the brokers and links to both; TradingView and Platforms are fully
+ * shows the brokers and links to both; Trading, TradingView and Platforms are fully
  * functional without an active broker.
  */
-export const PRE_BROKER_PATHS = ['/profile', '/tradingview', '/platforms'] as const
+export const PRE_BROKER_PATHS = ['/profile', '/tradingview', '/platforms', '/trading'] as const
 
 export function isPreBrokerPath(pathname: string): boolean {
   const p = pathname.replace(/\/+$/, '') || '/'

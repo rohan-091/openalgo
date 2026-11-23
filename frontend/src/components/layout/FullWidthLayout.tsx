@@ -1,5 +1,6 @@
-import { Navigate, Outlet } from 'react-router'
+import { Navigate, Outlet, useLocation } from 'react-router'
 import { SocketProvider } from '@/components/socket/SocketProvider'
+import { isPreBrokerPath } from '@/lib/brokerProfiles'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore } from '@/stores/themeStore'
 
@@ -9,9 +10,10 @@ import { useThemeStore } from '@/stores/themeStore'
  */
 export function FullWidthLayout() {
   const { isAuthenticated, user } = useAuthStore()
+  const { pathname } = useLocation()
   const appMode = useThemeStore((s) => s.appMode)
   const isAnalyzer = appMode === 'analyzer'
-  const allowedWithoutBroker = Boolean(user?.username) && isAnalyzer
+  const allowedWithoutBroker = Boolean(user?.username) && (isPreBrokerPath(pathname) || isAnalyzer)
 
   if (!isAuthenticated && !allowedWithoutBroker) {
     return <Navigate to="/login" replace />
