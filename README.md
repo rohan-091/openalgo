@@ -1,5 +1,11 @@
 # OpenAlgo - Open Source Algorithmic Trading Platform
 
+> [!NOTE]
+> **🚀 Antigravity Agentic Paper Trading Edition:**
+> This repository is extended with an autonomous AI multi-agent swing trading engine, zero-cost market data fallbacks, and decoupled paper trading.
+> For the complete setup guide, agent architecture, and developer runbook, see:
+> 👉 **[README_AGENTIC_VARIANT.md](README_AGENTIC_VARIANT.md)**
+
 <div align="center">
 
 [![PyPI Downloads](https://static.pepy.tech/badge/openalgo)](https://pepy.tech/projects/openalgo)
