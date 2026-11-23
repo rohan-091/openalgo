@@ -12,18 +12,18 @@ export interface TradingViewChartProps {
 }
 
 const POPULAR_SYMBOLS = [
-  { label: 'NIFTY 50', tvSymbol: 'NSE:NIFTY', symbol: 'NIFTY', exchange: 'NSE' },
-  { label: 'BANK NIFTY', tvSymbol: 'NSE:BANKNIFTY', symbol: 'BANKNIFTY', exchange: 'NSE' },
-  { label: 'FIN NIFTY', tvSymbol: 'NSE:FINNIFTY', symbol: 'FINNIFTY', exchange: 'NSE' },
-  { label: 'SENSEX', tvSymbol: 'BSE:SENSEX', symbol: 'SENSEX', exchange: 'BSE' },
   { label: 'RELIANCE', tvSymbol: 'NSE:RELIANCE', symbol: 'RELIANCE', exchange: 'NSE' },
+  { label: 'TCS', tvSymbol: 'NSE:TCS', symbol: 'TCS', exchange: 'NSE' },
   { label: 'HDFC BANK', tvSymbol: 'NSE:HDFCBANK', symbol: 'HDFCBANK', exchange: 'NSE' },
+  { label: 'INFY', tvSymbol: 'NSE:INFY', symbol: 'INFY', exchange: 'NSE' },
   { label: 'TATA MOTORS', tvSymbol: 'NSE:TATAMOTORS', symbol: 'TATAMOTORS', exchange: 'NSE' },
+  { label: 'NIFTY 50 (ETF)', tvSymbol: 'NSE:NIFTYBEES', symbol: 'NIFTYBEES', exchange: 'NSE' },
+  { label: 'BANK NIFTY (ETF)', tvSymbol: 'NSE:BANKBEES', symbol: 'BANKBEES', exchange: 'NSE' },
   { label: 'BTC/USDT', tvSymbol: 'BINANCE:BTCUSDT', symbol: 'BTCUSDFUT', exchange: 'CRYPTO' },
 ]
 
 export const TradingViewChart = memo(function TradingViewChart({
-  initialSymbol = 'NSE:NIFTY',
+  initialSymbol = 'NSE:RELIANCE',
   onSelectForTrading,
   height = '650px',
   className = '',
@@ -131,6 +131,13 @@ export const TradingViewChart = memo(function TradingViewChart({
             Chart
           </Button>
         </form>
+      </div>
+
+      {/* Helpful Hint on Exchange Licensing for Index Tickers */}
+      <div className="flex items-center justify-between text-[11px] text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-md border border-border/50">
+        <span>
+          💡 <strong>Note on Indices:</strong> Under exchange licensing rules, TradingView restricts spot index tickers (e.g. <code>NSE:NIFTY</code>, <code>NSE:BANKNIFTY</code>) in free external embed widgets. Use index ETFs (like <strong>NIFTY 50 ETF (NIFTYBEES)</strong> or <strong>BANK NIFTY ETF (BANKBEES)</strong>) or equities (<strong>RELIANCE</strong>, <strong>TCS</strong>, <strong>INFY</strong>) for charting. Webhook alerts for OpenAlgo still support direct index symbols.
+        </span>
       </div>
 
       {/* Embedded TradingView Chart Container */}
