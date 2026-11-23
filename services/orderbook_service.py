@@ -204,6 +204,16 @@ def get_orderbook(
     """
     # Case 1: API-based authentication
     if api_key and not (auth_token and broker):
+        from database.settings_db import get_analyze_mode
+
+        if get_analyze_mode():
+            from database.auth_db import verify_api_key
+
+            if verify_api_key(api_key):
+                from services.sandbox_service import sandbox_get_orderbook
+
+                return sandbox_get_orderbook(api_key, {"apikey": api_key})
+
         AUTH_TOKEN, broker_name = get_auth_token_broker(api_key)
         if AUTH_TOKEN is None:
             return False, {"status": "error", "message": "Invalid openalgo apikey"}, 403
