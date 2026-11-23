@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router'
 import { SocketProvider } from '@/components/socket/SocketProvider'
 import { useAuthStore } from '@/stores/authStore'
+import { useThemeStore } from '@/stores/themeStore'
 
 /**
  * Full-width layout for apps like Playground that need maximum screen space.
@@ -8,12 +9,15 @@ import { useAuthStore } from '@/stores/authStore'
  */
 export function FullWidthLayout() {
   const { isAuthenticated, user } = useAuthStore()
+  const appMode = useThemeStore((s) => s.appMode)
+  const isAnalyzer = appMode === 'analyzer'
+  const allowedWithoutBroker = Boolean(user?.username) && isAnalyzer
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !allowedWithoutBroker) {
     return <Navigate to="/login" replace />
   }
 
-  if (!user?.broker) {
+  if (!user?.broker && !allowedWithoutBroker) {
     return <Navigate to="/broker" replace />
   }
 
