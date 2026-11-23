@@ -49,7 +49,7 @@ export default function TradingView() {
 
   // Form state
   const [alertMode, setAlertMode] = useState<'strategy' | 'line'>('strategy')
-  const [symbol, setSymbol] = useState(isCrypto ? 'BTCUSDFUT' : 'NIFTY')
+  const [symbol, setSymbol] = useState(isCrypto ? 'BTCUSDFUT' : 'RELIANCE')
   const [exchange, setExchange] = useState(defaultExchange)
   const [product, setProduct] = useState(isCrypto ? 'NRML' : 'MIS')
   const [action, setAction] = useState('BUY')
@@ -281,7 +281,7 @@ export default function TradingView() {
       {(activeTab === 'chart' || activeTab === 'split') && (
         <div className="space-y-4 mb-8">
           <TradingViewChart
-            initialSymbol={symbol ? `${exchange}:${symbol}` : 'NSE:NIFTY'}
+            initialSymbol={symbol ? `${exchange}:${symbol}` : 'NSE:RELIANCE'}
             height={activeTab === 'split' ? '500px' : '700px'}
             onSelectForTrading={(s, ex) => {
               setSymbol(s)

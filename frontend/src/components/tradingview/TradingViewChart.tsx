@@ -33,6 +33,13 @@ export const TradingViewChart = memo(function TradingViewChart({
   const [currentSymbol, setCurrentSymbol] = useState(initialSymbol)
   const [customInput, setCustomInput] = useState('')
 
+  // Sync state if parent changes initialSymbol
+  useEffect(() => {
+    if (initialSymbol) {
+      setCurrentSymbol(initialSymbol)
+    }
+  }, [initialSymbol])
+
   useEffect(() => {
     if (!containerRef.current) return
 
