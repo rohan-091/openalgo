@@ -172,6 +172,23 @@ def start_broker_login():
     if broker not in enabled_brokers():
         return jsonify({"status": "error", "message": "Choose a broker from the list."}), 400
 
+    from database.settings_db import get_analyze_mode
+    if get_analyze_mode():
+        # In Paper Trading (Analyzer mode), bypass daily broker OAuth requirement completely
+        session["broker"] = broker
+        session["logged_in"] = True
+        mark_signed_in()
+        set_session_login_time()
+        from database.auth_db import upsert_auth
+        upsert_auth(session["user"], auth_token="analyzer_paper_token", broker=broker)
+        from utils.broker_keys import forget_logged_in_broker, use_broker_keys
+        forget_logged_in_broker()
+        try:
+            use_broker_keys(broker, check_live=False)
+        except Exception as e:
+            logger.warning(f"Could not use broker keys in analyzer mode: {e}")
+        return jsonify({"status": "success", "url": "/dashboard"})
+
     if session.get("logged_in") and session.get("broker") == broker:
         from database.auth_db import get_auth_token
 
@@ -1212,7 +1229,17 @@ def get_session_status():
                 set_session_login_time()
                 session["logged_in"] = True
                 from utils.broker_keys import logged_in_broker
-                session["broker"] = logged_in_broker() or "analyzer"
+                active_broker = logged_in_broker()
+                if not active_broker:
+                    from database.broker_keys_db import list_broker_keys
+                    saved_keys = list_broker_keys()
+                    active_broker = saved_keys[0].broker if saved_keys else "zerodha"
+                session["broker"] = active_broker
+                from database.settings_db import get_analyze_mode
+                if get_analyze_mode():
+                    from database.auth_db import get_auth_token, upsert_auth
+                    if not get_auth_token(default_user.username):
+                        upsert_auth(default_user.username, auth_token="analyzer_paper_token", broker=active_broker)
                 logger.info(f"Auto-authenticated localhost session for {default_user.username}")
 
     if "user" not in session:
@@ -1232,13 +1259,26 @@ def get_session_status():
 
     # On localhost, auto-authenticate and return fully logged in session
     if is_local:
+        if not session.get("broker") or session.get("broker") == "analyzer":
+            from utils.broker_keys import logged_in_broker
+            active_b = logged_in_broker()
+            if not active_b:
+                from database.broker_keys_db import list_broker_keys
+                saved_keys = list_broker_keys()
+                active_b = saved_keys[0].broker if saved_keys else "zerodha"
+            session["broker"] = active_b
+        from database.settings_db import get_analyze_mode
+        if get_analyze_mode():
+            from database.auth_db import get_auth_token, upsert_auth
+            if not get_auth_token(session.get("user")):
+                upsert_auth(session.get("user"), auth_token="analyzer_paper_token", broker=session["broker"])
         return jsonify(
             {
                 "status": "success",
                 "authenticated": True,
                 "logged_in": True,
                 "user": session.get("user"),
-                "broker": session.get("broker") or "analyzer",
+                "broker": session.get("broker") or "zerodha",
                 "api_key": api_key,
                 "active_sessions": active_count,
                 "broker_session_expired": False,

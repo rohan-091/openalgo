@@ -11,15 +11,20 @@ logger = get_logger(__name__)
 
 
 def is_session_expiry_disabled():
-    """Check if session expiry is disabled (e.g., for crypto brokers with 24/7 markets).
+    """Check if session expiry is disabled (e.g., for crypto brokers with 24/7 markets, or in Analyzer mode).
 
     True when DISABLE_SESSION_EXPIRY is set (the install script sets it when a
-    crypto broker such as deltaexchange is chosen), or when the broker whose
-    keys are in use is a crypto broker by its plugin.json. One broker is logged
-    in at a time, so this follows whichever it is.
+    crypto broker such as deltaexchange is chosen), or when in Analyzer mode,
+    or when the broker whose keys are in use is a crypto broker by its plugin.json.
     """
     if os.getenv("DISABLE_SESSION_EXPIRY", "false").lower() == "true":
         return True
+    try:
+        from database.settings_db import get_analyze_mode
+        if get_analyze_mode():
+            return True
+    except Exception:
+        pass
     # The installer sets the flag when a crypto broker is chosen at install
     # time. A crypto broker whose keys are saved in OpenAlgo was never seen by
     # the installer, so the broker logged in decides as well: its plugin.json

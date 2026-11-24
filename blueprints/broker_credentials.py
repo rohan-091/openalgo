@@ -187,6 +187,7 @@ def get_capabilities():
         return jsonify({"status": "error", "message": "No broker in session"}), 400
 
     capabilities = get_broker_capabilities(broker)
+    default_exchanges = ["NSE", "BSE", "NFO", "BFO", "CDS", "MCX", "NSE_INDEX", "BSE_INDEX", "MCX_INDEX"]
     if not capabilities:
         # Fallback for brokers without plugin.json capabilities
         return jsonify(
@@ -195,10 +196,14 @@ def get_capabilities():
                 "data": {
                     "broker_name": broker,
                     "broker_type": "IN_stock",
-                    "supported_exchanges": [],
+                    "supported_exchanges": default_exchanges,
                     "leverage_config": False,
                 },
             }
         )
+
+    if not capabilities.get("supported_exchanges"):
+        capabilities = dict(capabilities)
+        capabilities["supported_exchanges"] = default_exchanges
 
     return jsonify({"status": "success", "data": capabilities})

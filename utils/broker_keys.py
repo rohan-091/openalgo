@@ -423,9 +423,15 @@ def configured_brokers():
 
 
 def _never_expires(broker):
-    """Whether a broker's session runs past the daily rollover (crypto, or the flag)."""
+    """Whether a broker's session runs past the daily rollover (crypto, or the flag, or analyzer mode)."""
     if os.getenv("DISABLE_SESSION_EXPIRY", "false").lower() == "true":
         return True
+    try:
+        from database.settings_db import get_analyze_mode
+        if get_analyze_mode():
+            return True
+    except Exception:
+        pass
     return broker_type(broker) == "crypto"
 
 

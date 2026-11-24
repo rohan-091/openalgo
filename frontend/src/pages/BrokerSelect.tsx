@@ -38,8 +38,9 @@ import { useBrokerStore } from '@/stores/brokerStore'
 
 /** Brokers whose market data needs a paid data subscription. */
 const DATA_SUBSCRIPTION_NOTE: Record<string, string> = {
-  zerodha: 'Zerodha requires an active Kite Connect data subscription for market data access.',
-  dhan: 'Dhan requires an active Data API subscription for market data access.',
+  zerodha:
+    'Zerodha requires an active Kite Connect data subscription for live market data (Not required in Paper Trading mode).',
+  dhan: 'Dhan requires an active Data API subscription for live market data (Not required in Paper Trading mode).',
 }
 
 /**
@@ -141,21 +142,27 @@ export default function BrokerSelect() {
     setStarting(broker.id)
     setCardError(null)
     setPageError(null)
-    // This sign-in may replace the logged-in broker's session: an answer
-    // about the old session's capabilities still in flight must never be
-    // applied after it.
-    useBrokerStore.getState().clearCapabilities()
-    const started = await startBrokerLogin(broker.id)
-    if (started.error !== undefined) {
-      setCardError({ broker: broker.id, message: started.error })
+    try {
+      // This sign-in may replace the logged-in broker's session: an answer
+      // about the old session's capabilities still in flight must never be
+      // applied after it.
+      useBrokerStore.getState().clearCapabilities()
+      const started = await startBrokerLogin(broker.id)
+      if (started.error !== undefined) {
+        setCardError({ broker: broker.id, message: started.error })
+        setStarting(null)
+        // Refused: the server says which broker is logged in now, not what
+        // this page assumed.
+        await refresh()
+        void useBrokerStore.getState().fetchCapabilities()
+        return
+      }
+      window.location.href = started.url
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'The broker login could not be started.'
+      setCardError({ broker: broker.id, message: msg })
       setStarting(null)
-      // Refused: the server says which broker is logged in now, not what
-      // this page assumed.
-      await refresh()
-      void useBrokerStore.getState().fetchCapabilities()
-      return
     }
-    window.location.href = started.url
   }
 
   // One broker at a time. Logging in to another is confirmed first; the
