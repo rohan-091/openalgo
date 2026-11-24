@@ -63,7 +63,6 @@ const WebSocketTest = lazy(() => import('@/pages/WebSocketTest'))
 const WebSocketOrder = lazy(() => import('@/pages/WebSocketOrder'))
 const ChartTest = lazy(() => import('@/pages/ChartTest'))
 const Playground = lazy(() => import('@/pages/Playground'))
-const Trading = lazy(() => import('@/pages/Trading'))
 const Historify = lazy(() => import('@/pages/Historify'))
 const HistorifyCharts = lazy(() => import('@/pages/HistorifyCharts'))
 
@@ -324,7 +323,7 @@ function App() {
               {/* Full-width protected routes */}
               <Route element={<FullWidthLayout />}>
                 <Route path="/playground" element={<Playground />} />
-                <Route path="/trading" element={<Trading />} />
+                <Route path="/trading" element={<Navigate to="/tradingview" replace />} />
                 {/* The agent is an application surface, not a document: the
                     thread scrolls inside a fixed viewport with the composer
                     pinned under it, and a conversation sidebar sits beside it.
