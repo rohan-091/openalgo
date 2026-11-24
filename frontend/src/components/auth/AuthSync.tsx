@@ -87,15 +87,27 @@ export function AuthSync({ children }: AuthSyncProps) {
         if (data && isBrokerSession(data)) {
           // Flask session is authenticated with broker - sync to Zustand
           await applyBrokerSession(data)
-        } else if (data && data.status === 'success' && data.authenticated && !data.logged_in) {
-          // User is logged in but hasn't connected broker yet
-          setUser({
-            username: data.user ?? '',
-            broker: null,
-            isLoggedIn: false,
-            loginTime: null,
-          })
-          clearCapabilities()
+        } else if (data && data.status === 'success' && data.authenticated) {
+          const isLocal =
+            typeof window !== 'undefined' &&
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+          if (isLocal) {
+            // Automatically promote localhost session to active analyzer mode
+            await applyBrokerSession({
+              ...data,
+              logged_in: true,
+              broker: data.broker || 'analyzer',
+            })
+          } else {
+            // User is logged in but hasn't connected broker yet
+            setUser({
+              username: data.user ?? '',
+              broker: null,
+              isLoggedIn: false,
+              loginTime: null,
+            })
+            clearCapabilities()
+          }
         } else {
           // Not authenticated, status is not success, or a non-OK response
           // (401, 500, etc.) - clear Zustand store

@@ -45,7 +45,7 @@ export default function Login() {
           return
         }
 
-        // Check if already logged in
+        // Check if already logged in or running on localhost
         const sessionResponse = await fetch('/auth/session-status', {
           credentials: 'include',
         })
@@ -53,18 +53,13 @@ export default function Login() {
         // Only process if response is successful (not 401 etc.)
         if (sessionResponse.ok) {
           const sessionData = await sessionResponse.json()
+          const isLocal =
+            typeof window !== 'undefined' &&
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
-          if (sessionData.status === 'success' && sessionData.logged_in && sessionData.broker) {
-            // Already fully logged in with broker, go to dashboard
+          if (sessionData.status === 'success' && (sessionData.authenticated || sessionData.logged_in || isLocal)) {
+            // Auto-logged in or on localhost, go straight to dashboard
             navigate('/dashboard', { replace: true })
-            return
-          } else if (
-            sessionData.status === 'success' &&
-            sessionData.authenticated &&
-            !sessionData.logged_in
-          ) {
-            // Logged in but no broker, go to broker selection
-            navigate('/broker', { replace: true })
             return
           }
         }

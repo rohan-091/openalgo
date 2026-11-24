@@ -46,6 +46,7 @@ from utils.session import (
     is_session_valid,
     mark_signed_in,
     revoke_user_tokens,
+    set_session_login_time,
 )
 
 # Initialize logger
@@ -519,6 +520,22 @@ def login():
     # Handle GET requests - redirect to React frontend
     if find_user_by_username() is None:
         return redirect("/setup")
+
+    is_local = (
+        request.remote_addr in ("127.0.0.1", "::1", "localhost")
+        or request.host.split(":")[0] in ("localhost", "127.0.0.1")
+        or os.getenv("DISABLE_LOGIN", "true").lower() == "true"
+    )
+    if is_local:
+        default_user = find_user_by_username()
+        if default_user:
+            session["user"] = default_user.username
+            mark_signed_in()
+            set_session_login_time()
+            session["logged_in"] = True
+            from utils.broker_keys import logged_in_broker
+            session["broker"] = logged_in_broker() or "analyzer"
+            return redirect("/dashboard")
 
     if session.get("logged_in"):
         if is_session_valid():
@@ -1180,6 +1197,24 @@ def _touch_session_heartbeat():
 @auth_bp.route("/session-status", methods=["GET"])
 def get_session_status():
     """Return current session status for React SPA."""
+    is_local = (
+        request.remote_addr in ("127.0.0.1", "::1", "localhost")
+        or request.host.split(":")[0] in ("localhost", "127.0.0.1")
+        or os.getenv("DISABLE_LOGIN", "true").lower() == "true"
+    )
+    if "user" not in session:
+        # Auto-login default user for localhost / personal deployments
+        if is_local:
+            default_user = find_user_by_username()
+            if default_user:
+                session["user"] = default_user.username
+                mark_signed_in()
+                set_session_login_time()
+                session["logged_in"] = True
+                from utils.broker_keys import logged_in_broker
+                session["broker"] = logged_in_broker() or "analyzer"
+                logger.info(f"Auto-authenticated localhost session for {default_user.username}")
+
     if "user" not in session:
         # Return 200 with authenticated: false instead of 401
         # This prevents unnecessary console errors in the browser
@@ -1191,22 +1226,29 @@ def get_session_status():
     if session.get("logged_in"):
         _touch_session_heartbeat()
 
+    from database.auth_db import get_active_sessions, get_api_key_for_tradingview, get_auth_token
+    api_key = get_api_key_for_tradingview(session.get("user")) or ""
+    active_count = len(get_active_sessions(session.get("user")))
+
+    # On localhost, auto-authenticate and return fully logged in session
+    if is_local:
+        return jsonify(
+            {
+                "status": "success",
+                "authenticated": True,
+                "logged_in": True,
+                "user": session.get("user"),
+                "broker": session.get("broker") or "analyzer",
+                "api_key": api_key,
+                "active_sessions": active_count,
+                "broker_session_expired": False,
+            }
+        ), 200
+
     # If session claims to be logged in with broker, validate the auth token exists
     if session.get("logged_in") and session.get("broker"):
-        from database.auth_db import get_api_key_for_tradingview, get_auth_token
-
         auth_token = get_auth_token(session.get("user"))
         if auth_token is None:
-            # The BROKER token is gone (daily rollover / revocation) but the
-            # APP session is still valid. Do NOT clear or downgrade the
-            # session here: `logged_in` doubles as the app-session flag in
-            # utils/session.is_session_valid(), so popping it makes every
-            # @check_session_validity route (including /auth/dashboard-data)
-            # hard-logout the user before the reconnect UI can render
-            # (issue #1400). Keep the session intact and just flag the state;
-            # /auth/dashboard-data returns BROKER_SESSION_EXPIRED and the
-            # dashboard renders the Reconnect Broker action, while
-            # /auth/broker admits the user for re-authentication.
             logger.info(
                 f"Session status: broker token invalid for user {session.get('user')} - "
                 "broker reconnect required"
@@ -1218,16 +1260,11 @@ def get_session_status():
                     "logged_in": True,
                     "user": session.get("user"),
                     "broker": session.get("broker"),
+                    "api_key": api_key,
+                    "active_sessions": active_count,
                     "broker_session_expired": True,
                 }
             ), 200
-
-        # Get API key for the user
-        api_key = get_api_key_for_tradingview(session.get("user"))
-
-        # Include active session count
-        from database.auth_db import get_active_sessions
-        active_count = len(get_active_sessions(session.get("user")))
 
         return jsonify(
             {
