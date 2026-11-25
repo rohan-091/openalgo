@@ -153,6 +153,12 @@ def get_quotes_with_auth(
     if broker_module is None:
         return False, {"status": "error", "message": "Broker-specific module not found"}, 404
 
+    from database.settings_db import get_analyze_mode
+    if get_analyze_mode() or auth_token == "analyzer_paper_token":
+        yf_quote = _fetch_yfinance_quote(symbol, exchange)
+        if yf_quote is not None:
+            return True, {"status": "success", "data": yf_quote}, 200
+
     try:
         # Initialize broker's data handler based on broker's requirements
         if hasattr(broker_module.BrokerData.__init__, "__code__"):
@@ -298,6 +304,12 @@ def get_multiquotes_with_auth(
     if broker_module is None:
         return False, {"status": "error", "message": "Broker-specific module not found"}, 404
 
+    from database.settings_db import get_analyze_mode
+    if get_analyze_mode() or auth_token == "analyzer_paper_token":
+        yf_quote = _fetch_yfinance_quote(symbol, exchange)
+        if yf_quote is not None:
+            return True, {"status": "success", "data": yf_quote}, 200
+
     try:
         # Initialize broker's data handler based on broker's requirements
         if hasattr(broker_module.BrokerData.__init__, "__code__"):
@@ -349,6 +361,17 @@ def get_multiquotes_with_auth(
 
         # Use broker's native multiquotes method with only valid symbols
         # Strip validation metadata before passing to broker
+        from database.settings_db import get_analyze_mode
+        if get_analyze_mode() or auth_token == "analyzer_paper_token":
+            fallback_results = []
+            for s in valid_symbols:
+                yfq = _fetch_yfinance_quote(s["symbol"], s["exchange"])
+                if yfq:
+                    fallback_results.append({"symbol": s["symbol"], "exchange": s["exchange"], "data": yfq})
+                else:
+                    fallback_results.append({"symbol": s["symbol"], "exchange": s["exchange"], "error": "Quote not found"})
+            return True, {"status": "success", "results": results + fallback_results}, 200
+
         clean_symbols = [{"symbol": s["symbol"], "exchange": s["exchange"]} for s in valid_symbols]
         multiquotes = data_handler.get_multiquotes(clean_symbols)
 
