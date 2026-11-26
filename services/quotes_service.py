@@ -149,15 +149,15 @@ def get_quotes_with_auth(
     if not is_valid:
         return False, {"status": "error", "message": error_msg}, 400
 
-    broker_module = import_broker_module(broker)
-    if broker_module is None:
-        return False, {"status": "error", "message": "Broker-specific module not found"}, 404
-
     from database.settings_db import get_analyze_mode
     if get_analyze_mode() or auth_token == "analyzer_paper_token":
         yf_quote = _fetch_yfinance_quote(symbol, exchange)
         if yf_quote is not None:
             return True, {"status": "success", "data": yf_quote}, 200
+
+    broker_module = import_broker_module(broker)
+    if broker_module is None:
+        return False, {"status": "error", "message": "Broker-specific module not found"}, 404
 
     try:
         # Initialize broker's data handler based on broker's requirements
