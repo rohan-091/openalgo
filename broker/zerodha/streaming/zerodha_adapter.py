@@ -106,6 +106,13 @@ class ZerodhaWebSocketAdapter(BaseBrokerWebSocketAdapter):
             if not self.access_token:
                 return {"status": "error", "message": "Invalid access token"}
 
+            from database.settings_db import get_analyze_mode
+            if get_analyze_mode() or self.access_token == "analyzer_paper_token":
+                self.connected = True
+                self.running = True
+                self.logger.info("Analyzer mode active: Zerodha live WebSocket disabled; paper trading active.")
+                return {"status": "success", "message": "Analyzer mode active"}
+
             # Initialize WebSocket client. Pass user_id so the client can
             # re-read a fresh access token from the database on reconnect
             # (tokens roll over daily at ~3 AM IST).
@@ -130,6 +137,12 @@ class ZerodhaWebSocketAdapter(BaseBrokerWebSocketAdapter):
 
     def connect(self) -> dict[str, Any]:
         """Connect to Zerodha WebSocket"""
+        from database.settings_db import get_analyze_mode
+        if get_analyze_mode() or self.access_token == "analyzer_paper_token":
+            self.connected = True
+            self.running = True
+            return {"status": "success", "message": "Connected in paper trading mode"}
+
         if not self.ws_client:
             return {"status": "error", "message": "WebSocket client not initialized"}
 
@@ -271,6 +284,10 @@ class ZerodhaWebSocketAdapter(BaseBrokerWebSocketAdapter):
             mode: Subscription mode (1=LTP, 2=Quote, 3=Full)
             depth_level: Market depth level (for compatibility, not used in Zerodha)
         """
+        from database.settings_db import get_analyze_mode
+        if get_analyze_mode() or self.access_token == "analyzer_paper_token":
+            return {"status": "success", "message": f"Subscribed to {symbol}"}
+
         if not self.ws_client:
             return {"status": "error", "message": "WebSocket client not initialized"}
 
@@ -377,6 +394,10 @@ class ZerodhaWebSocketAdapter(BaseBrokerWebSocketAdapter):
             mode: Optional mode parameter (for compatibility)
             depth_level: Optional depth level parameter (for compatibility)
         """
+        from database.settings_db import get_analyze_mode
+        if get_analyze_mode() or self.access_token == "analyzer_paper_token":
+            return {"status": "success", "message": f"Unsubscribed from {symbol}"}
+
         try:
             with self.lock:
                 # Per-mode keys (issue #1664). A mode-specific unsubscribe
